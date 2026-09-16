@@ -1,0 +1,20 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./keycloak/course-realm.json:/opt/keycloak/data/import/course-realm.json:ro
+
+# Notes for students:
+# - You do NOT need to run `docker compose up` yourself. As long as the
+#   spring-boot-docker-compose dependency is on the classpath, Spring Boot
+#   detects this file and starts/stops the container(s) automatically
+#   whenever you run the app (bootRun, IDE run, `java -jar`, tests that
+#   boot the full context).
+# - Keycloak admin console: http://localhost:8080  (admin / admin)
+# - Realm "course-realm" is pre-imported from ./keycloak/course-realm.json

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Course Demo UI</title>
+<style>
+  body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 16px; }
+  button { display: block; margin: 8px 0; padding: 8px 12px; cursor: pointer; }
+  pre { background: #f0f0f0; padding: 12px; white-space: pre-wrap; word-break: break-all; }
+  h1 { font-size: 18px; }
+</style>
+</head>
+<body>
+
+<h1>Java for everyone </h1>
+
+<p>
+  You reached this page, which means the OIDC login redirect already
+  succeeded - this URL (<code>/ui/index.html</code>) requires
+  authentication, so Spring Security bounced you through Keycloak's login
+  page before you got here.
+</p>
+
+<button onclick="fetchToken()">1. Fetch my access token (from session)</button>
+<button onclick="callEndpoint('/api/public/ping')">2. Call /api/public/ping (no auth needed)</button>
+<button onclick="callEndpoint('/api/secure/me')">3. Call /api/secure/me (needs token)</button>
+<button onclick="callEndpoint('/api/admin/reports')">4. Call /api/admin/reports (needs ADMIN role)</button>
+<button onclick="logout()">Logout</button>
+
+<pre id="output">(responses show up here)</pre>
+
+<script>
+  let accessToken = null;
+
+  async function fetchToken() {
+    const res = await fetch('/ui/token', { credentials: 'include' });
+    const data = await res.json();
+    accessToken = data.access_token;
+    show('Got access token (truncated): ' + accessToken.substring(0, 40) + '...');
+  }
+
+  async function callEndpoint(path) {
+    const headers = accessToken ? { 'Authorization': 'Bearer ' + accessToken } : {};
+    const res = await fetch(path, { headers });
+    const status = res.status;
+    const raw = await res.text();
+    let body;
+    try { body = JSON.stringify(JSON.parse(raw), null, 2); } catch (e) { body = raw; }
+    show('GET ' + path + ' -> ' + status + '\n' + body);
+  }
+
+  function logout() {
+    window.location.href = '/logout';
+  }
+
+  function show(text) {
+    document.getElementById('output').textContent = text;
+  }
+</script>
+
+</body>
+</html>
