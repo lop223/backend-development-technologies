@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Нова заявка</title>
+</head>
+<body>
+<h1>Нова заявка</h1>
+
+<form th:action="@{/ui/tickets}" th:object="${ticketRequest}" method="post">
+
+    <label>Заголовок:</label><br/>
+    <input type="text" th:field="*{title}" required/><br/><br/>
+
+    <label>Опис:</label><br/>
+    <textarea th:field="*{description}"></textarea><br/><br/>
+
+    <label>Пріоритет:</label><br/>
+    <select th:field="*{priority}">
+        <option th:each="priority : ${T(net.lop223.helpdesksystem.utils.enums.TicketPriority).values()}"
+                th:value="${priority}"
+                th:text="${priority}">
+        </option>
+    </select><br/><br/>
+
+    <label>Категорія:</label><br/>
+    <select th:field="*{categoryId}">
+        <option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}"></option>
+    </select><br/><br/>
+
+    <label>Виконавець (необов'язково):</label><br/>
+    <select th:field="*{assignedToId}">
+        <option value="">-- не призначено --</option>
+        <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.username}"></option>
+    </select><br/><br/>
+
+    <button type="submit">Створити</button>
+</form>
+
+<p><a th:href="@{/ui/tickets}">← Назад до списку</a></p>
+</body>
+</html>

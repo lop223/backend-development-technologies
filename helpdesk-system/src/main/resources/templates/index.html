@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Helpdesk System</title>
+</head>
+<body>
+<h1>Helpdesk System</h1>
+
+<div sec:authorize="isAuthenticated()">
+    <p>Вітаємо, <span sec:authentication="name"></span>!
+        Ролі: <span sec:authentication="authorities"></span></p>
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Вийти</button>
+    </form>
+</div>
+
+<div sec:authorize="isAnonymous()">
+    <p><a th:href="@{/ui/tickets}">Увійти та перейти до заявок</a></p>
+</div>
+
+<ul>
+    <li><a th:href="@{/ui/tickets}">Заявки (Tickets)</a></li>
+    <li><a th:href="@{/ui/categories}">Категорії (Categories)</a></li>
+    <li><a th:href="@{/ui/users}">Користувачі (Users)</a></li>
+</ul>
+</body>
+</html>

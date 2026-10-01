@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Користувачі</title>
+</head>
+<body>
+<h1>Користувачі</h1>
+<p><a th:href="@{/}">← На головну</a> | <a th:href="@{/ui/users/new}">+ Новий користувач</a></p>
+
+<table border="1" cellpadding="6">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Повне ім'я</th>
+        <th>Роль</th>
+        <th>Дії</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="user : ${users}">
+        <td th:text="${user.id}"></td>
+        <td th:text="${user.username}"></td>
+        <td th:text="${user.email}"></td>
+        <td th:text="${user.fullName}"></td>
+        <td th:text="${user.role}"></td>
+        <td>
+            <a th:href="@{/ui/users/{id}/edit(id=${user.id})}">Редагувати</a>
+            |
+            <form th:action="@{/ui/users/{id}/delete(id=${user.id})}" method="post" style="display:inline">
+                <button type="submit" onclick="return confirm('Видалити користувача?')">Видалити</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

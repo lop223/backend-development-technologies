@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Форма користувача</title>
+</head>
+<body>
+<h1 th:text="${isEdit} ? 'Редагувати користувача' : 'Новий користувач'"></h1>
+
+<form th:action="${isEdit} ? @{/ui/users/{id}(id=${userId})} : @{/ui/users}"
+      th:object="${appUserRequest}" method="post">
+
+    <label>Username:</label><br/>
+    <input type="text" th:field="*{username}" required/><br/><br/>
+
+    <label>Email:</label><br/>
+    <input type="email" th:field="*{email}" required/><br/><br/>
+
+    <label>Повне ім'я:</label><br/>
+    <input type="text" th:field="*{fullName}"/><br/><br/>
+
+    <label>Роль:</label><br/>
+    <select th:field="*{role}">
+        <option th:each="r : ${T(com.helpdesk.enums.Role).values()}"
+                th:value="${r}" th:text="${r}"></option>
+    </select><br/><br/>
+
+    <button type="submit">Зберегти</button>
+</form>
+
+<p><a th:href="@{/ui/users}">← Назад до списку</a></p>
+</body>
+</html>
