@@ -1,0 +1,202 @@
+### =====================================================
+### HELPDESK SYSTEM — HTTP requests collection
+### Змінні нижче потрібно заповнити перед демонстрацією
+### =====================================================
+
+@baseUrl = http://localhost:8081
+@keycloakUrl = http://localhost:8080/realms/helpdesk-realm
+@clientId = helpdesk-ui-client
+@clientSecret = HMAPXj0OBjE7EO7OmZncKVC0bzVLxzvv
+
+### =====================================================
+### 0. ОТРИМАННЯ JWT-ТОКЕНІВ (grant_type=password)
+### Виконати ці 3 запити ПЕРШИМИ, скопіювати access_token
+### у змінні @tokenUser / @tokenAgent / @tokenAdmin нижче
+### =====================================================
+
+### 0.1 Токен для user1 (роль USER)
+POST {{keycloakUrl}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=user1&password=user1pass
+
+### 0.2 Токен для agent1 (роль AGENT)
+POST {{keycloakUrl}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=agent1&password=agent1pass
+
+### 0.3 Токен для admin1 (роль ADMIN)
+POST {{keycloakUrl}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=admin&password=adminpass
+
+
+@tokenUser = eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJPeU1nTXZvWTBlakZZbzJEdWFPZE14OTh3Ync4RGJCWWNyTHZTZGw1N0xFIn0.eyJleHAiOjE3ODk2NTk0NzQsImlhdCI6MTc4OTY1OTE3NCwianRpIjoiMWVlZThkMWYtNmEzOS00Nzk1LTllOWItNjE0Mjc3MzU5N2Q4IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9oZWxwZGVzay1yZWFsbSIsInN1YiI6IjA1NzYxYmFhLWI5NzAtNGRkZC05ZmMwLTUwYmRmNzU5ZDU1MCIsInR5cCI6IkJlYXJlciIsImF6cCI6ImhlbHBkZXNrLXVpLWNsaWVudCIsInNpZCI6ImUyNDQ3MTQ0LTYxYTktNGM1Mi05ODcwLTM4MTg3YmU5Mzg1NyIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo4MDgxIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJVU0VSIl19LCJzY29wZSI6InByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6ItCf0LXRgtGA0L4g0JrQvtGA0LjRgdGC0YPQstCw0YciLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJ1c2VyMSIsImdpdmVuX25hbWUiOiLQn9C10YLRgNC-IiwiZmFtaWx5X25hbWUiOiLQmtC-0YDQuNGB0YLRg9Cy0LDRhyIsImVtYWlsIjoidXNlcjFAaGVscGRlc2subG9jYWwifQ.IkNuZVB43IXODe7rw4STVQbUFYxBGETUH4C9879js1d3ruWnptDNnM5_x54yUKpdpjVF2wecOSWVNnDVwlYSuMUzIANZ_LAKHJFGFWGLW0R9AShz3gTbmeV9uwzQmCR-BTZEAbshawllX7BDAWjbIuBz35AlYX2-hKqVNZw3c4sH4lkW0bPsurow6R8wivwplq_-xOOOB_FQRHvSqpn2z3wIBWxOiBffkfhxcpeGhwcbMy1XgRCG3WFZwhQ2VXocahiqZcL6psoD2EZU62hkELTpvwIb_iI2wunQ_lfCezfnNoXmqxTXyKfO6YIV1HMhOxmj0azTG1rWGGsDfe09kQ
+@tokenAgent = ТОКЕН_AGENT1
+@tokenAdmin = eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJPeU1nTXZvWTBlakZZbzJEdWFPZE14OTh3Ync4RGJCWWNyTHZTZGw1N0xFIn0.eyJleHAiOjE3ODk2NTk1NDgsImlhdCI6MTc4OTY1OTI0OCwianRpIjoiMGQ3MmNjY2QtOWY3MC00YTRhLTk4ZTYtYzUxZTIxM2YyYWExIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwL3JlYWxtcy9oZWxwZGVzay1yZWFsbSIsInN1YiI6ImI5YWViYjU4LTkzMTEtNDlkMy1hNTA1LWU5YjgyOTNkNDAzMSIsInR5cCI6IkJlYXJlciIsImF6cCI6ImhlbHBkZXNrLXVpLWNsaWVudCIsInNpZCI6Ijg1MDNhNmI2LWM1ZTItNDRhYS1iYmUwLTQzZmY0Y2FkMzJhMiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cDovL2xvY2FsaG9zdDo4MDgxIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJBRE1JTiJdfSwic2NvcGUiOiJwcm9maWxlIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5hbWUiOiJTeXN0ZW0gQWRtaW5pc3RyYXRvciIsInByZWZlcnJlZF91c2VybmFtZSI6ImFkbWluIiwiZ2l2ZW5fbmFtZSI6IlN5c3RlbSIsImZhbWlseV9uYW1lIjoiQWRtaW5pc3RyYXRvciIsImVtYWlsIjoiYWRtaW5AaGVscGRlc2subG9jYWwifQ.aV-qHCq7fM1DhvYRw1pICKXBtjE3MyD0PxKxUXDEnV6yy5OqsumRT9iS1F7hxKpJR7T1uoquGaJXQ9yt4BK4AH3cJQx1Vq3YBJhOhqdB_ctE_ZiFfr30owwT4yEF_kNTeicqbTvVNI-ybd9Ep4UFKGARjYbU7iHU8YPrg6iVzo3bwgSXEK0aMi0tGXMmmPvu1Hs89sQO3RY2OsYVG34jSRAVY3rQLxss_FIlJUew52nuXy_8BuP4lr7S48z6p2NXpquuoBMocf2SANkhE-ji_rHrfg-McM9lacXWuVxjo127wn2g6nFGD_6eu4rAukDPEGFEcvPjtZdqET0HM16eBg
+
+
+### =====================================================
+### 1. CATEGORIES CRUD
+### =====================================================
+
+### 1.1 Отримати всі категорії (будь-який автентифікований)
+GET {{baseUrl}}/api/categories
+Authorization: Bearer {{tokenUser}}
+
+### 1.2 Отримати категорію за id
+GET {{baseUrl}}/api/categories/5
+Authorization: Bearer {{tokenUser}}
+
+### 1.3 Створити категорію (ADMIN) — очікуємо 201
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Бухгалтерія",
+  "description": "Питання з обліку та фінансів"
+}
+
+### 1.4 Створити категорію від USER — очікуємо 403 (SecurityFilterChain, AC6)
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{tokenUser}}
+Content-Type: application/json
+
+{
+  "name": "Тест",
+  "description": "Не повинно створитись"
+}
+
+### 1.5 Оновити категорію (ADMIN)
+PUT {{baseUrl}}/api/categories/1
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "name": "Обладнання (оновлено)",
+  "description": "Оновлений опис"
+}
+
+### 1.6 Видалити категорію (ADMIN)
+DELETE {{baseUrl}}/api/categories/6
+Authorization: Bearer {{tokenAdmin}}
+
+
+### =====================================================
+### 2. APP USERS CRUD (усе тільки ADMIN)
+### =====================================================
+
+### 2.1 Отримати всіх користувачів (ADMIN) — 200 OK
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{tokenAdmin}}
+
+### 2.2 Отримати всіх користувачів від USER — очікуємо 403 (SecurityFilterChain, AC6)
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{tokenUser}}
+
+### 2.3 Створити користувача (ADMIN)
+POST {{baseUrl}}/api/users
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "username": "agent2",
+  "email": "agent2@helpdesk.local",
+  "fullName": "Другий Агент",
+  "role": "AGENT"
+}
+
+### 2.4 Оновити користувача (ADMIN)
+PUT {{baseUrl}}/api/users/2
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "username": "agent1",
+  "email": "agent1@helpdesk.local",
+  "fullName": "Іван Агентенко (оновлено)",
+  "role": "AGENT"
+}
+
+### 2.5 Видалити користувача (ADMIN)
+DELETE {{baseUrl}}/api/users/4
+Authorization: Bearer {{tokenAdmin}}
+
+
+### =====================================================
+### 3. TICKETS CRUD
+### =====================================================
+
+### 3.1 Отримати всі заявки (будь-який автентифікований)
+GET {{baseUrl}}/api/tickets
+Authorization: Bearer {{tokenUser}}
+
+### 3.2 Отримати заявку за id
+GET {{baseUrl}}/api/tickets/1
+Authorization: Bearer {{tokenUser}}
+
+### 3.3 Створити заявку від USER — createdBy автоматично = user1 (AC5, Крок 6)
+POST {{baseUrl}}/api/tickets
+Authorization: Bearer {{tokenUser}}
+Content-Type: application/json
+
+{
+  "title": "Не працює монітор",
+  "description": "Чорний екран при увімкненні",
+  "priority": "HIGH",
+  "categoryId": 1
+}
+
+### 3.4 Оновити заявку (AGENT або ADMIN)
+PUT {{baseUrl}}/api/tickets/1
+Authorization: Bearer {{tokenAgent}}
+Content-Type: application/json
+
+{
+  "title": "Не працює монітор (уточнено)",
+  "description": "Чорний екран, кабель перевірено",
+  "priority": "HIGH",
+  "categoryId": 1,
+  "assignedToId": 2
+}
+
+### 3.5 Змінити статус заявки від AGENT — очікуємо 200 OK (@PreAuthorize дозволяє)
+PATCH {{baseUrl}}/api/tickets/1/status
+Authorization: Bearer {{tokenAgent}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### 3.6 Змінити статус заявки від USER — очікуємо 403 (@PreAuthorize, AC7)
+PATCH {{baseUrl}}/api/tickets/1/status
+Authorization: Bearer {{tokenUser}}
+Content-Type: application/json
+
+{
+  "status": "RESOLVED"
+}
+
+### 3.7 Видалити заявку від AGENT — очікуємо 403 (SecurityFilterChain, AC6: DELETE лише ADMIN)
+DELETE {{baseUrl}}/api/tickets/1
+Authorization: Bearer {{tokenAgent}}
+
+### 3.8 Видалити заявку від ADMIN — очікуємо 204 No Content
+DELETE {{baseUrl}}/api/tickets/1
+Authorization: Bearer {{tokenAdmin}}
+
+
+### =====================================================
+### 4. АВТЕНТИФІКАЦІЯ / НЕГАТИВНІ СЦЕНАРІЇ
+### =====================================================
+
+### 4.1 Запит без токена взагалі — очікуємо 401 Unauthorized
+GET {{baseUrl}}/api/tickets
+
+### 4.2 Запит з невалідним/зіпсованим токеном — очікуємо 401 Unauthorized
+GET {{baseUrl}}/api/tickets
+Authorization: Bearer invalid.token.value

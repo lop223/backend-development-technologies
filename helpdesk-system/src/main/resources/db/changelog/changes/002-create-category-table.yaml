@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-category-table
+      author: lop223
+      changes:
+        - createTable:
+            tableName: category
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_category_name
+              - column:
+                  name: description
+                  type: VARCHAR(500)

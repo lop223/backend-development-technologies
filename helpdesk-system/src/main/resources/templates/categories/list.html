@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Категорії</title>
+</head>
+<body>
+<h1>Категорії</h1>
+<p><a th:href="@{/}">← На головну</a> | <a th:href="@{/ui/categories/new}">+ Нова категорія</a></p>
+
+<table border="1" cellpadding="6">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Назва</th>
+        <th>Опис</th>
+        <th>Дії</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="category : ${categories}">
+        <td th:text="${category.id}"></td>
+        <td th:text="${category.name}"></td>
+        <td th:text="${category.description}"></td>
+        <td>
+            <a th:href="@{/ui/categories/{id}/edit(id=${category.id})}">Редагувати</a>
+            |
+            <form th:action="@{/ui/categories/{id}/delete(id=${category.id})}" method="post" style="display:inline">
+                <button type="submit" onclick="return confirm('Видалити категорію?')">Видалити</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

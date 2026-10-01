@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: helpdesk-postgres
+    environment:
+      POSTGRES_DB: helpdesk_db
+      POSTGRES_USER: helpdesk_user
+      POSTGRES_PASSWORD: helpdesk_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - helpdesk_pg_data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: helpdesk-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - helpdesk_keycloak_data:/opt/keycloak/data
+
+volumes:
+  helpdesk_pg_data:
+  helpdesk_keycloak_data:

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Форма категорії</title>
+</head>
+<body>
+<h1 th:text="${isEdit} ? 'Редагувати категорію' : 'Нова категорія'"></h1>
+
+<form th:action="${isEdit} ? @{/ui/categories/{id}(id=${categoryId})} : @{/ui/categories}"
+      th:object="${categoryRequest}" method="post">
+
+    <label>Назва:</label><br/>
+    <input type="text" th:field="*{name}" required/><br/><br/>
+
+    <label>Опис:</label><br/>
+    <textarea th:field="*{description}"></textarea><br/><br/>
+
+    <button type="submit">Зберегти</button>
+</form>
+
+<p><a th:href="@{/ui/categories}">← Назад до списку</a></p>
+</body>
+</html>

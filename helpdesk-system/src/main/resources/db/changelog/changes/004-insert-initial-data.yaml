@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-insert-initial-categories
+      author: lop223
+      changes:
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name, value: "Обладнання" }
+              - column: { name: description, value: "Проблеми з фізичним обладнанням" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name, value: "Мережа" }
+              - column: { name: description, value: "Проблеми з мережею та Wi-Fi" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name, value: "ПЗ" }
+              - column: { name: description, value: "Проблеми з програмним забезпеченням" }
+        - insert:
+            tableName: category
+            columns:
+              - column: { name: name, value: "Доступи" }
+              - column: { name: description, value: "Запити на доступ до систем/ресурсів" }
+
+  - changeSet:
+      id: 004-insert-initial-users
+      author: lop223
+      changes:
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: username, value: "admin" }
+              - column: { name: email, value: "admin@helpdesk.local" }
+              - column: { name: full_name, value: "System Administrator" }
+              - column: { name: role, value: "ADMIN" }
+              - column: { name: created_at, valueDate: "2026-01-01T00:00:00" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: username, value: "agent1" }
+              - column: { name: email, value: "agent1@helpdesk.local" }
+              - column: { name: full_name, value: "Іван Агентенко" }
+              - column: { name: role, value: "AGENT" }
+              - column: { name: created_at, valueDate: "2026-01-01T00:00:00" }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: username, value: "user1" }
+              - column: { name: email, value: "user1@helpdesk.local" }
+              - column: { name: full_name, value: "Петро Користувач" }
+              - column: { name: role, value: "USER" }
+              - column: { name: created_at, valueDate: "2026-01-01T00:00:00" }
