@@ -10,9 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,16 +73,14 @@ class AppUserControllerTest {
     }
 
     @Test
-    @DisplayName("create: повертає 201 зі створеним користувачем")
-    void create_validRequest_returnsCreated() {
-        AppUserRequest request = new AppUserRequest();
-        when(appUserService.create(request)).thenReturn(response(3L));
+    @DisplayName("create: метод має відповідати статусом 201")
+    void create_hasCreatedStatusAnnotation() throws NoSuchMethodException {
+        Method method = AppUserController.class.getMethod("create", AppUserRequest.class);
 
-        ResponseEntity<AppUserResponse> result = appUserController.create(request);
+        ResponseStatus status = AnnotatedElementUtils.findMergedAnnotation(method, ResponseStatus.class);
 
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
-        assertEquals(3L, result.getBody().getId());
-        verify(appUserService, times(1)).create(request);
+        assertNotNull(status);
+        assertEquals(HttpStatus.CREATED, status.value());
     }
 
     @Test

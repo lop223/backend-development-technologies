@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.lop223.helpdesksystem.dto.request.AppUserRequest;
 import net.lop223.helpdesksystem.dto.response.AppUserResponse;
 import net.lop223.helpdesksystem.service.AppUserService;
-import org.springframework.http.HttpStatus;
+import net.lop223.helpdesksystem.utils.annotation.CreatedPostMapping;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,10 +28,9 @@ public class AppUserController {
         return ResponseEntity.ok(appUserService.getById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<AppUserResponse> create(@Valid @RequestBody AppUserRequest request) {
-        AppUserResponse created = appUserService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @CreatedPostMapping
+    public AppUserResponse create(@Valid @RequestBody AppUserRequest request) {
+        return appUserService.create(request);
     }
 
     @PutMapping("/{id}")

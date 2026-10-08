@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.lop223.helpdesksystem.dto.request.CategoryRequest;
 import net.lop223.helpdesksystem.dto.response.CategoryResponse;
 import net.lop223.helpdesksystem.service.CategoryService;
-import org.springframework.http.HttpStatus;
+import net.lop223.helpdesksystem.utils.annotation.CreatedPostMapping;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,10 +28,9 @@ public class CategoryController
         return ResponseEntity.ok(categoryService.getById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<CategoryResponse> create(@Valid @RequestBody CategoryRequest request) {
-        CategoryResponse categoryResponse = categoryService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoryResponse);
+    @CreatedPostMapping
+    public CategoryResponse create(@Valid @RequestBody CategoryRequest request) {
+        return categoryService.create(request);
     }
 
     @PutMapping("/{id}")

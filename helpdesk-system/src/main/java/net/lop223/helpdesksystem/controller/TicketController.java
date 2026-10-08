@@ -6,12 +6,10 @@ import net.lop223.helpdesksystem.dto.request.TicketRequest;
 import net.lop223.helpdesksystem.dto.request.TicketStatusUpdateRequest;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
 import net.lop223.helpdesksystem.service.TicketService;
-import org.springframework.http.HttpStatus;
+import net.lop223.helpdesksystem.utils.annotation.CreatedPostMapping;
+import net.lop223.helpdesksystem.utils.annotation.CurrentUsername;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -32,13 +30,10 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.getById(id));
     }
 
-    // TODO (Крок 6): creatorUsername братимемо з Authentication, а не з query-параметра
-    @PostMapping
-    public ResponseEntity<TicketResponse> create(@Valid @RequestBody TicketRequest request,
-                                                 Authentication authentication) {
-        String creatorUsername = extractUsername(authentication);
-        TicketResponse created = ticketService.create(request, creatorUsername);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @CreatedPostMapping
+    public TicketResponse create(@Valid @RequestBody TicketRequest request,
+                                 @CurrentUsername String creatorUsername) {
+        return ticketService.create(request, creatorUsername);
     }
 
     @PutMapping("/{id}")
@@ -57,17 +52,6 @@ public class TicketController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         ticketService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private String extractUsername(Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof Jwt jwt) {
-            return jwt.getClaimAsString("preferred_username");
-        }
-        if (principal instanceof OidcUser oidcUser) {
-            return oidcUser.getPreferredUsername();
-        }
-        return authentication.getName();
     }
 }
 

@@ -6,6 +6,7 @@ import net.lop223.helpdesksystem.dto.request.TicketStatusUpdateRequest;
 import net.lop223.helpdesksystem.service.AppUserService;
 import net.lop223.helpdesksystem.service.CategoryService;
 import net.lop223.helpdesksystem.service.TicketService;
+import net.lop223.helpdesksystem.utils.annotation.CurrentUsername;
 import net.lop223.helpdesksystem.utils.enums.TicketStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,8 +38,7 @@ public class TicketWebController {
 
     @PostMapping
     public String create(@ModelAttribute TicketRequest ticketRequest,
-                         org.springframework.security.oauth2.core.oidc.user.OidcUser oidcUser) {
-        String creatorUsername = oidcUser.getPreferredUsername();
+                         @CurrentUsername String creatorUsername) {
         ticketService.create(ticketRequest, creatorUsername);
         return "redirect:/ui/tickets";
     }

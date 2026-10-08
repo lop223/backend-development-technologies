@@ -6,9 +6,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import net.lop223.helpdesksystem.utils.enums.TicketPriority;
+import net.lop223.helpdesksystem.utils.validation.HighPriorityRequiresDescription;
 
 @Getter
 @Setter
+@HighPriorityRequiresDescription
 public class TicketRequest {
 
     @NotBlank(message = "Title must not be blank")
