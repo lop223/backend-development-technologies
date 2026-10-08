@@ -8,6 +8,7 @@ import net.lop223.helpdesksystem.entity.AppUser;
 import net.lop223.helpdesksystem.mapper.AppUserMapper;
 import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.service.AppUserService;
+import net.lop223.helpdesksystem.utils.annotation.AuditAction;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
+    @AuditAction(action = "USER_CREATED")
     public AppUserResponse create(AppUserRequest request) {
         AppUser user = appUserMapper.toEntity(request);
         AppUser saved = appUserRepository.save(user);
@@ -45,6 +47,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
+    @AuditAction(action = "USER_UPDATED")
     public AppUserResponse update(Long id, AppUserRequest request) {
         AppUser user = findEntityById(id);
         appUserMapper.updateEntityFromRequest(request, user);
@@ -53,6 +56,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
+    @AuditAction(action = "USER_DELETED")
     public void delete(Long id) {
         AppUser user = findEntityById(id);
         appUserRepository.delete(user);

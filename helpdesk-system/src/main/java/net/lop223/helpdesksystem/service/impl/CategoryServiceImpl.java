@@ -8,6 +8,7 @@ import net.lop223.helpdesksystem.entity.Category;
 import net.lop223.helpdesksystem.mapper.CategoryMapper;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.service.CategoryService;
+import net.lop223.helpdesksystem.utils.annotation.ProtectSystemEntity;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -52,6 +53,7 @@ public class CategoryServiceImpl implements CategoryService
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
+    @ProtectSystemEntity(reservedIds = {1L, 3L})
     public void delete(Long id) {
         Category category = findEntityById(id);
         categoryRepository.delete(category);

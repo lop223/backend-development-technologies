@@ -39,6 +39,7 @@ public class TicketWebController {
     @PostMapping
     public String create(@ModelAttribute TicketRequest ticketRequest,
                          @CurrentUsername String creatorUsername) {
+        java.util.Objects.requireNonNull(creatorUsername, "Username cannot be null");
         ticketService.create(ticketRequest, creatorUsername);
         return "redirect:/ui/tickets";
     }

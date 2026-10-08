@@ -76,13 +76,12 @@ class TicketWebControllerTest {
     @DisplayName("create: створює тікет від імені OIDC-користувача і робить redirect")
     void create_oidcUser_createsTicketAndRedirects() {
         TicketRequest request = new TicketRequest();
-        OidcUser oidcUser = mock(OidcUser.class);
-        when(oidcUser.getPreferredUsername()).thenReturn("john");
+        String username = "john";
 
-        String view = ticketWebController.create(request, oidcUser);
+        String view = ticketWebController.create(request, username);
 
         assertEquals("redirect:/ui/tickets", view);
-        verify(ticketService, times(1)).create(request, "john");
+        verify(ticketService, times(1)).create(request, username);
     }
 
     @Test

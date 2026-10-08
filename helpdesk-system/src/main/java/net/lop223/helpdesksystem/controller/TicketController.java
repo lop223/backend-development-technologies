@@ -33,6 +33,7 @@ public class TicketController {
     @CreatedPostMapping
     public TicketResponse create(@Valid @RequestBody TicketRequest request,
                                  @CurrentUsername String creatorUsername) {
+        java.util.Objects.requireNonNull(creatorUsername, "Username cannot be null");
         return ticketService.create(request, creatorUsername);
     }
 

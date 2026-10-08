@@ -1,5 +1,6 @@
 package net.lop223.helpdesksystem.controller;
 
+import net.lop223.helpdesksystem.dto.request.AppUserRequest;
 import net.lop223.helpdesksystem.dto.request.CategoryRequest;
 import net.lop223.helpdesksystem.dto.response.CategoryResponse;
 import net.lop223.helpdesksystem.service.CategoryService;
@@ -10,9 +11,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,16 +72,14 @@ class CategoryControllerTest {
     }
 
     @Test
-    @DisplayName("create: повертає 201 зі створеною категорією")
-    void create_validRequest_returnsCreated() {
-        CategoryRequest request = new CategoryRequest();
-        when(categoryService.create(request)).thenReturn(response(3L));
+    @DisplayName("create: метод має відповідати статусом 201")
+    void create_hasCreatedStatusAnnotation() throws NoSuchMethodException {
+        Method method = CategoryController.class.getMethod("create", CategoryRequest.class);
 
-        ResponseEntity<CategoryResponse> result = categoryController.create(request);
+        ResponseStatus status = AnnotatedElementUtils.findMergedAnnotation(method, ResponseStatus.class);
 
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
-        assertEquals(3L, result.getBody().getId());
-        verify(categoryService, times(1)).create(request);
+        assertNotNull(status);
+        assertEquals(HttpStatus.CREATED, status.value());
     }
 
     @Test

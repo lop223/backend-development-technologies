@@ -9,6 +9,7 @@ import java.util.List;
 public interface TicketService {
     List<TicketResponse> getAll();
     TicketResponse getById(Long id);
+    List<TicketResponse> getTicketsBatch(List<Long> ids);
     TicketResponse create(TicketRequest request, String creatorUsername);
     TicketResponse update(Long id, TicketRequest request);
     TicketResponse updateStatus(Long id, TicketStatusUpdateRequest request);

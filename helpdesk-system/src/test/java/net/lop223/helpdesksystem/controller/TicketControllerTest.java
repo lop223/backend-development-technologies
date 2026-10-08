@@ -79,72 +79,65 @@ class TicketControllerTest {
     }
 
     @Test
-    @DisplayName("create: бере username із claim 'preferred_username' JWT і повертає 201")
+    @DisplayName("create: успішно створює тікет і повертає TicketResponse для JWT користувача")
     void create_jwtPrincipal_usesPreferredUsernameClaim() {
         TicketRequest request = new TicketRequest();
-        Jwt jwt = Jwt.withTokenValue("token")
-                .header("alg", "none")
-                .claim("preferred_username", "jwt-user")
-                .build();
-        Authentication authentication = new TestingAuthenticationToken(jwt, null);
-        when(ticketService.create(request, "jwt-user")).thenReturn(response(10L));
+        String username = "jwt-user";
+        when(ticketService.create(request, username)).thenReturn(response(10L));
 
-        ResponseEntity<TicketResponse> result = ticketController.create(request, authentication);
+        TicketResponse result = ticketController.create(request, username);
 
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
-        assertEquals(10L, result.getBody().getId());
-        verify(ticketService, times(1)).create(request, "jwt-user");
+        assertNotNull(result);
+        assertEquals(10L, result.getId());
+        verify(ticketService, times(1)).create(request, username);
     }
 
     @Test
-    @DisplayName("create: бере username з OidcUser.getPreferredUsername()")
+    @DisplayName("create: успішно передає username з OIDC у сервіс")
     void create_oidcPrincipal_usesPreferredUsername() {
         TicketRequest request = new TicketRequest();
-        OidcUser oidcUser = mock(OidcUser.class);
-        when(oidcUser.getPreferredUsername()).thenReturn("oidc-user");
-        Authentication authentication = new TestingAuthenticationToken(oidcUser, null);
-        when(ticketService.create(request, "oidc-user")).thenReturn(response(11L));
+        String username = "oidc-user";
+        when(ticketService.create(request, username)).thenReturn(response(11L));
 
-        ResponseEntity<TicketResponse> result = ticketController.create(request, authentication);
+        TicketResponse result = ticketController.create(request, username);
 
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        assertNotNull(result);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         verify(ticketService).create(any(TicketRequest.class), captor.capture());
         assertEquals("oidc-user", captor.getValue());
     }
 
     @Test
-    @DisplayName("create: для іншого типу principal використовує authentication.getName()")
+    @DisplayName("create: успішно передає звичайне ім'я користувача у сервіс")
     void create_plainPrincipal_fallsBackToAuthenticationName() {
         TicketRequest request = new TicketRequest();
-        Authentication authentication = new TestingAuthenticationToken("plain-user", null);
-        when(ticketService.create(request, "plain-user")).thenReturn(response(12L));
+        String username = "plain-user";
+        when(ticketService.create(request, username)).thenReturn(response(12L));
 
-        ResponseEntity<TicketResponse> result = ticketController.create(request, authentication);
+        TicketResponse result = ticketController.create(request, username);
 
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
-        verify(ticketService).create(request, "plain-user");
+        assertNotNull(result);
+        assertEquals(12L, result.getId());
+        verify(ticketService).create(request, username);
     }
 
     @Test
-    @DisplayName("create: JWT без 'preferred_username' передає у сервіс null")
+    @DisplayName("create: без preferred_username (null) викидає NullPointerException і не викликає сервіс")
     void create_jwtWithoutPreferredUsername_passesNullUsername() {
         TicketRequest request = new TicketRequest();
-        Jwt jwt = Jwt.withTokenValue("token").header("alg", "none").claim("sub", "abc").build();
-        Authentication authentication = new TestingAuthenticationToken(jwt, null);
-        when(ticketService.create(request, null)).thenThrow(new ResourceNotFoundException("User not found: null"));
 
-        ResourceNotFoundException ex = assertThrows(
-                ResourceNotFoundException.class,
-                () -> ticketController.create(request, authentication)
+        NullPointerException ex = assertThrows(
+                NullPointerException.class,
+                () -> ticketController.create(request, null)
         );
 
-        assertEquals("User not found: null", ex.getMessage());
+        assertEquals("Username cannot be null", ex.getMessage());
+        verifyNoInteractions(ticketService);
     }
 
     @Test
-    @DisplayName("create: викидає NullPointerException без автентифікації і не звертається до сервісу")
-    void create_nullAuthentication_throwsNullPointerException() {
+    @DisplayName("create: викидає NullPointerException без імені користувача і не звертається до сервісу")
+    void create_nullUsername_throwsNullPointerException() {
         TicketRequest request = new TicketRequest();
 
         assertThrows(NullPointerException.class, () -> ticketController.create(request, null));

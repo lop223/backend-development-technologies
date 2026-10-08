@@ -13,6 +13,7 @@ import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
 import net.lop223.helpdesksystem.service.TicketService;
+import net.lop223.helpdesksystem.utils.annotation.MaskSensitiveData;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -39,8 +40,17 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
+    @MaskSensitiveData
     public TicketResponse getById(Long id) {
         return ticketMapper.toResponse(findEntityById(id));
+    }
+
+    @Override
+    @Transactional
+    public List<TicketResponse> getTicketsBatch(List<Long> ids) {
+        return ids.stream()
+                .map(this::getById)
+                .toList();
     }
 
     @Override

@@ -20,12 +20,15 @@ import java.lang.annotation.Target;
 @ResponseStatus(HttpStatus.CREATED)
 public @interface CreatedPostMapping {
 
-    @AliasFor(annotation = PostMapping.class, attribute = "value")
+    @AliasFor(annotation = RequestMapping.class, attribute = "value")
     String[] value() default {};
 
-    @AliasFor(annotation = PostMapping.class, attribute = "consumes")
+    @AliasFor(annotation = RequestMapping.class, attribute = "path")
+    String[] path() default {};
+
+    @AliasFor(annotation = RequestMapping.class, attribute = "consumes")
     String[] consumes() default {};
 
-    @AliasFor(annotation = PostMapping.class, attribute = "produces")
+    @AliasFor(annotation = RequestMapping.class, attribute = "produces")
     String[] produces() default {};
 }
