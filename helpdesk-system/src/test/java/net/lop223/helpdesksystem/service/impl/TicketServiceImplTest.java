@@ -10,6 +10,7 @@ import net.lop223.helpdesksystem.mapper.TicketMapper;
 import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
+import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
 import net.lop223.helpdesksystem.utils.enums.Role;
 import net.lop223.helpdesksystem.utils.enums.TicketPriority;
 import net.lop223.helpdesksystem.utils.enums.TicketStatus;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +46,9 @@ class TicketServiceImplTest {
 
     @Mock
     private TicketMapper ticketMapper;
+
+    @Mock
+    private TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
@@ -154,12 +159,15 @@ class TicketServiceImplTest {
         when(appUserRepository.findById(9L)).thenReturn(Optional.of(assignee));
         when(ticketRepository.save(any(Ticket.class))).thenReturn(saved);
         when(ticketMapper.toResponse(saved)).thenReturn(expected);
+        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         TicketResponse result = ticketService.create(request, "john");
 
         assertSame(expected, result);
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository, times(1)).save(captor.capture());
+        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(expected);
         Ticket captured = captor.getValue();
         assertEquals("Printer is broken", captured.getTitle());
         assertEquals("Paper jam on the 2nd floor", captured.getDescription());
@@ -178,6 +186,8 @@ class TicketServiceImplTest {
         when(appUserRepository.findByUsername("john")).thenReturn(Optional.of(user(1L, "john", Role.USER)));
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
         when(ticketMapper.toResponse(any(Ticket.class))).thenReturn(response(0L));
+        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         TicketResponse result = ticketService.create(request, "john");
 
@@ -186,6 +196,7 @@ class TicketServiceImplTest {
         verify(ticketRepository).save(captor.capture());
         assertNull(captor.getValue().getAssignedTo());
         verify(appUserRepository, never()).findById(anyLong());
+        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(result);
     }
 
     @Test
