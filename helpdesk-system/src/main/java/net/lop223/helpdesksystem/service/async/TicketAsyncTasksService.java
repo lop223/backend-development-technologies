@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
-public class TicketAsyncTasks
+public class TicketAsyncTasksService
 {
     @Async("ticketExecutor")
     public void sendCreatedEmail(Long ticketId, String username) {
