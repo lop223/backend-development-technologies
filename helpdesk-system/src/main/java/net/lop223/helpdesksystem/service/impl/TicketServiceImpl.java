@@ -2,6 +2,7 @@ package net.lop223.helpdesksystem.service.impl;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.lop223.helpdesksystem.dto.request.TicketRequest;
 import net.lop223.helpdesksystem.dto.request.TicketStatusUpdateRequest;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
@@ -13,6 +14,7 @@ import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
 import net.lop223.helpdesksystem.service.TicketService;
+import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
 import net.lop223.helpdesksystem.utils.annotation.MaskSensitiveData;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -29,6 +32,7 @@ public class TicketServiceImpl implements TicketService {
     private final CategoryRepository categoryRepository;
     private final AppUserRepository appUserRepository;
     private final TicketMapper ticketMapper;
+    private final TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
 
     @Override
     @Transactional
@@ -71,7 +75,19 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket saved = ticketRepository.save(ticket);
-        return ticketMapper.toResponse(saved);
+        TicketResponse response = ticketMapper.toResponse(saved);
+
+        ticketAsyncCoordinatorService.dispatchAfterCreation(response)
+                .whenComplete((summary, exception) -> {
+                    if (exception != null) {
+                        log.error("Async post-processing failed for ticket {}",
+                                response.getId(), exception);
+                    } else {
+                        log.info("Async post-processing result: {}", summary);
+                    }
+                });
+
+        return response;
     }
 
     @Override
