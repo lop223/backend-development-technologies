@@ -42,7 +42,7 @@ public class TicketAsyncCoordinatorService
             Supplier<CompletableFuture<String>> submission) {
         try {
             return submission.get()
-                    .orTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .orTimeout(5, TimeUnit.SECONDS)
                     .handle((value, exception) -> {
                         if (exception != null) {
                             log.warn("{} failed or timed out", operation, exception);

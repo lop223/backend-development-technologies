@@ -35,7 +35,7 @@ public class TicketAsyncTasksService
 
     private void simulateSlowExternalCall() {
         try {
-            Thread.sleep(10000);
+            Thread.sleep(1_000);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Async ticket operation was interrupted", ex);
