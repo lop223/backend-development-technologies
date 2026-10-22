@@ -18,7 +18,6 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional
-@PreAuthorize("hasRole('ADMIN')")
 public class AppUserServiceImpl implements AppUserService {
 
     private final AppUserRepository appUserRepository;
@@ -40,6 +39,7 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     @AuditAction(action = "USER_CREATED")
+    @PreAuthorize("hasRole('ADMIN')")
     public AppUserResponse create(AppUserRequest request) {
         AppUser user = appUserMapper.toEntity(request);
         AppUser saved = appUserRepository.save(user);
@@ -48,6 +48,7 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     @AuditAction(action = "USER_UPDATED")
+    @PreAuthorize("hasRole('ADMIN')")
     public AppUserResponse update(Long id, AppUserRequest request) {
         AppUser user = findEntityById(id);
         appUserMapper.updateEntityFromRequest(request, user);
@@ -57,6 +58,7 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     @AuditAction(action = "USER_DELETED")
+    @PreAuthorize("hasRole('ADMIN')")
     public void delete(Long id) {
         AppUser user = findEntityById(id);
         appUserRepository.delete(user);

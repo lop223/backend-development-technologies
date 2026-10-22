@@ -7,6 +7,7 @@ import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
 import net.lop223.helpdesksystem.service.TicketService;
+import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
 import net.lop223.helpdesksystem.utils.aspect.MaskSensitiveDataAspect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,8 @@ class TicketServiceSelfInvocationUnitTest {
     private AppUserRepository appUserRepository;
     @Mock
     private TicketMapper ticketMapper;
+    @Mock
+    private TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
 
     // Це буде наш Справжній Spring Proxy, але створений без контексту
     private TicketService ticketServiceProxy;
@@ -45,7 +48,7 @@ class TicketServiceSelfInvocationUnitTest {
     void setUp() {
         // 1. Створюємо реальний екземпляр сервісу зі звичайними моками через конструктор
         TicketServiceImpl targetService = new TicketServiceImpl(
-                ticketRepository, categoryRepository, appUserRepository, ticketMapper
+                ticketRepository, categoryRepository, appUserRepository, ticketMapper, ticketAsyncCoordinatorService
         );
 
         // 2. Створюємо Spring Proxy засобами AspectJProxyFactory
