@@ -1,6 +1,7 @@
 package net.lop223.notificationservice.api;
 
 import net.lop223.notificationservice.controller.NotificationController;
+import net.lop223.notificationservice.security.InternalApiTokenValidator;
 import net.lop223.notificationservice.service.NotificationOperationsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,14 @@ class NotificationControllerTest {
 
     @MockBean
     private NotificationOperationsService notificationService;
+    @MockBean
+    private InternalApiTokenValidator tokenValidator;
 
     @Test
     @DisplayName("Приймає коректний запит на створення тикета та повертає статус 202 Accepted")
     void acceptsValidTicketCreatedRequest() throws Exception {
         mockMvc.perform(post("/internal/notifications/ticket-created")
+                        .header("X-Internal-Token", "test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -46,6 +50,7 @@ class NotificationControllerTest {
     @DisplayName("Відхиляє запит на генерацію PDF з некоректним (непозитивним) ID тикета та повертає статус 400 Bad Request")
     void rejectsTicketRequestWithNonPositiveId() throws Exception {
         mockMvc.perform(post("/internal/notifications/ticket-pdf")
+                        .header("X-Internal-Token", "test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

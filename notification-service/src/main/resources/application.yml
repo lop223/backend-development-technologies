@@ -4,3 +4,7 @@ server:
 spring:
   application:
     name: notification-service
+
+internal:
+    api:
+      token: ${NOTIFICATION_API_TOKEN}

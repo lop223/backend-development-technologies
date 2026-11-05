@@ -3,6 +3,7 @@ package net.lop223.helpdesksystem.service.async;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
@@ -12,61 +13,85 @@ import java.util.function.Supplier;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TicketAsyncCoordinatorService
-{
-    private static final long TIMEOUT_SECONDS = 3;
+public class TicketAsyncCoordinatorService {
+
+    private static final long TIMEOUT_SECONDS = 5;
 
     private final TicketAsyncTasksService ticketAsyncTasksService;
 
-    public CompletableFuture<TicketAsyncSummary> dispatchAfterCreation(TicketResponse ticketResponse) {
-        try {
-            ticketAsyncTasksService.sendCreatedEmail(ticketResponse.getId(),
-                    ticketResponse.getCreatedByUsername());
-        } catch (Exception ex) {
-            log.warn("Email task rejected for ticket {}", ticketResponse.getId(), ex);
-        }
+    public CompletableFuture<TicketAsyncSummary> dispatchAfterCreation(
+            TicketResponse ticketResponse
+    ) {
+        Long ticketId = ticketResponse.getId();
 
-        CompletableFuture<OperationResult> pdf =
-                capture("PDF", () -> ticketAsyncTasksService.generatePdfReceipt(ticketResponse.getId()));
+        CompletableFuture<OperationResult> email = capture(
+                "Email",
+                () -> ticketAsyncTasksService.sendCreatedEmail(
+                        ticketId,
+                        ticketResponse.getCreatedByUsername()
+                )
+        );
 
-        CompletableFuture<OperationResult> webhook =
-                capture("Webhook", () -> ticketAsyncTasksService.notifyAssignedAgent(ticketResponse.getId()));
+        CompletableFuture<OperationResult> pdf = capture(
+                "PDF",
+                () -> ticketAsyncTasksService.generatePdfReceipt(ticketId)
+        );
 
-        return pdf.thenCombine(webhook,
-                (pdfResult, webhookResult) ->
-                        new TicketAsyncSummary(ticketResponse.getId(), pdfResult, webhookResult));
+        CompletableFuture<OperationResult> webhook = capture(
+                "Webhook",
+                () -> ticketAsyncTasksService.notifyAssignedAgent(ticketId)
+        );
+
+        return CompletableFuture.allOf(email, pdf, webhook)
+                .thenApply(ignored -> new TicketAsyncSummary(
+                        ticketId,
+                        email.join(),
+                        pdf.join(),
+                        webhook.join()
+                ));
     }
 
     private CompletableFuture<OperationResult> capture(
             String operation,
-            Supplier<CompletableFuture<String>> submission) {
+            Supplier<CompletableFuture<String>> submission
+    ) {
         try {
             return submission.get()
-                    .orTimeout(5, TimeUnit.SECONDS)
+                    .orTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .handle((value, exception) -> {
                         if (exception != null) {
-                            log.warn("{} failed or timed out", operation, exception);
+                            log.warn("{} notification failed or timed out", operation, exception);
                             return new OperationResult(
-                                    operation, false, "Failed or timed out");
+                                    operation,
+                                    false,
+                                    "Failed or timed out"
+                            );
                         }
                         return new OperationResult(operation, true, value);
                     });
-        } catch (Exception ex) {
-            log.warn("{} task rejected: executor is saturated", operation, ex);
+        } catch (Exception exception) {
+            log.warn("{} notification task could not be submitted", operation, exception);
+            String details = exception instanceof TaskRejectedException
+                    ? "Executor is busy; retry later"
+                    : "Task could not be submitted";
             return CompletableFuture.completedFuture(
-                    new OperationResult(operation, false, "Executor is busy; retry later"));
+                    new OperationResult(operation, false, details)
+            );
         }
     }
 
     public record OperationResult(
             String operation,
             boolean successful,
-            String details) {
+            String details
+    ) {
     }
 
     public record TicketAsyncSummary(
             Long ticketId,
+            OperationResult email,
             OperationResult pdf,
-            OperationResult webhook) {
+            OperationResult webhook
+    ) {
     }
 }
