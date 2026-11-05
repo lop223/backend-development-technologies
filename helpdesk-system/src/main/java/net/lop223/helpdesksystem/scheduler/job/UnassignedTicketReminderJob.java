@@ -1,4 +1,4 @@
-package net.lop223.helpdesksystem.scheduler;
+package net.lop223.helpdesksystem.scheduler.job;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lop223.helpdesksystem.service.ScheduledTicketTasksService;

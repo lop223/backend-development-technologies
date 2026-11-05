@@ -1,5 +1,7 @@
 package net.lop223.helpdesksystem.scheduler;
 
+import net.lop223.helpdesksystem.scheduler.job.DailyTicketSummaryJob;
+import net.lop223.helpdesksystem.scheduler.job.UnassignedTicketReminderJob;
 import org.quartz.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
