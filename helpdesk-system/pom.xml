@@ -5,22 +5,17 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
-        <relativePath/>
+        <groupId>com.helpdesk</groupId>
+        <artifactId>helpdesk-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <groupId>com.helpdesk</groupId>
     <artifactId>helpdesk-system</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>helpdesk-system</name>
     <description>Semester project: Helpdesk / Ticket Management System</description>
 
     <properties>
-        <java.version>21</java.version>
-        <mapstruct.version>1.6.2</mapstruct.version>
-        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
     </properties>
 
     <dependencies>
@@ -100,11 +95,6 @@
         </dependency>
 
         <!-- Test -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
