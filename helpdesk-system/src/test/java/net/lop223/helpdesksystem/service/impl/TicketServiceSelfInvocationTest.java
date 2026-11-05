@@ -3,11 +3,11 @@ package net.lop223.helpdesksystem.service.impl;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
 import net.lop223.helpdesksystem.entity.Ticket;
 import net.lop223.helpdesksystem.mapper.TicketMapper;
-import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
 import net.lop223.helpdesksystem.service.TicketService;
 import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
+import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.aspect.MaskSensitiveDataAspect;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +33,7 @@ class TicketServiceSelfInvocationUnitTest {
     @Mock
     private CategoryRepository categoryRepository;
     @Mock
-    private AppUserRepository appUserRepository;
+    private UserServiceClient userServiceClient;
     @Mock
     private TicketMapper ticketMapper;
     @Mock
@@ -48,7 +48,8 @@ class TicketServiceSelfInvocationUnitTest {
     void setUp() {
         // 1. Створюємо реальний екземпляр сервісу зі звичайними моками через конструктор
         TicketServiceImpl targetService = new TicketServiceImpl(
-                ticketRepository, categoryRepository, appUserRepository, ticketMapper, ticketAsyncCoordinatorService
+                ticketRepository, categoryRepository, userServiceClient, ticketMapper,
+                ticketAsyncCoordinatorService
         );
 
         // 2. Створюємо Spring Proxy засобами AspectJProxyFactory
@@ -63,6 +64,7 @@ class TicketServiceSelfInvocationUnitTest {
         // 3. Базові моки для повернення тікета
         Ticket mockTicket = new Ticket();
         mockTicket.setId(1L);
+        mockTicket.setCreatedById(1L);
         mockTicket.setDescription(RAW_DESCRIPTION);
 
         TicketResponse mockResponse = new TicketResponse();
@@ -71,6 +73,8 @@ class TicketServiceSelfInvocationUnitTest {
 
         when(ticketRepository.findById(1L)).thenReturn(Optional.of(mockTicket));
         when(ticketMapper.toResponse(any())).thenReturn(mockResponse);
+        when(userServiceClient.getById(1L))
+                .thenReturn(new UserServiceClient.UserReference(1L, "user1"));
     }
 
     @Test
