@@ -1,6 +1,10 @@
 server:
   port: 8082
 
+internal:
+  api:
+    token: ${USER_SERVICE_API_TOKEN}
+
 spring:
   application:
     name: user-service

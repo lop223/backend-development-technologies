@@ -6,9 +6,10 @@ import net.lop223.userservice.dto.request.AppUserResponse;
 import java.util.List;
 
 public interface AppUserService {
-    public List<AppUserResponse> getAll();
-    public AppUserResponse getById(Long id);
-    public AppUserResponse create(AppUserRequest request);
-    public AppUserResponse update(Long id, AppUserRequest request);
-    public void delete(Long id);
+    List<AppUserResponse> getAll();
+    AppUserResponse getById(Long id);
+    AppUserResponse getByUsername(String username);
+    AppUserResponse create(AppUserRequest request);
+    AppUserResponse update(Long id, AppUserRequest request);
+    void delete(Long id);
 }

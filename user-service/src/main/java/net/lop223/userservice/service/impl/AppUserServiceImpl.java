@@ -33,6 +33,15 @@ public class AppUserServiceImpl implements AppUserService {
         return AppUserResponse.from(findById(id));
     }
 
+    @Transactional(readOnly = true)
+    public AppUserResponse getByUsername(String username) {
+        return AppUserResponse.from(repository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found: " + username
+                )));
+    }
+
     public AppUserResponse create(AppUserRequest request) {
         AppUser user = new AppUser(
                 request.username(),
