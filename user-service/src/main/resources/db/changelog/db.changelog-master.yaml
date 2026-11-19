@@ -39,3 +39,15 @@ databaseChangeLog:
                   type: TIMESTAMP
                   constraints:
                     nullable: false
+  - changeSet:
+      id: user-service-002-seed-demo-users
+      author: lop223
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO app_user (username, email, full_name, role, created_at)
+              VALUES
+                ('admin', 'admin@helpdesk.local', 'System Administrator', 'ADMIN', CURRENT_TIMESTAMP),
+                ('agent1', 'agent1@helpdesk.local', 'Helpdesk Agent', 'AGENT', CURRENT_TIMESTAMP),
+                ('user1', 'user1@helpdesk.local', 'Helpdesk User', 'USER', CURRENT_TIMESTAMP)
+              ON CONFLICT (username) DO NOTHING;

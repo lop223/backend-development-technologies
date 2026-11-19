@@ -2,12 +2,12 @@
 <html lang="uk" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Нова заявка</title>
+    <title th:text="${formTitle}">Заявка</title>
 </head>
 <body>
-<h1>Нова заявка</h1>
+<h1 th:text="${formTitle}">Заявка</h1>
 
-<form th:action="@{/ui/tickets}" th:object="${ticketRequest}" method="post">
+<form th:action="@{${formAction}}" th:object="${ticketRequest}" method="post">
 
     <label>Заголовок:</label><br/>
     <input type="text" th:field="*{title}" required/><br/><br/>
@@ -34,7 +34,9 @@
         <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.username}"></option>
     </select><br/><br/>
 
-    <button type="submit">Створити</button>
+    <button type="submit" th:text="${formAction == '/ui/tickets' ? 'Створити' : 'Зберегти зміни'}">
+        Створити
+    </button>
 </form>
 
 <p><a th:href="@{/ui/tickets}">← Назад до списку</a></p>

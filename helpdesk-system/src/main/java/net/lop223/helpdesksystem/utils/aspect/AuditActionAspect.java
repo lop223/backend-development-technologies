@@ -1,8 +1,8 @@
 package net.lop223.helpdesksystem.utils.aspect;
 
 import lombok.RequiredArgsConstructor;
-import net.lop223.helpdesksystem.dto.response.AppUserResponse;
 import net.lop223.helpdesksystem.service.AuditLogService;
+import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.annotation.AuditAction;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -20,8 +20,8 @@ public class AuditActionAspect {
     public void auditSuccess(JoinPoint joinPoint, AuditAction auditAction, Object result) {
         Long targetUserId = null;
 
-        if (result instanceof AppUserResponse userResponse) {
-            targetUserId = userResponse.getId();
+        if (result instanceof UserServiceClient.UserReference userReference) {
+            targetUserId = userReference.id();
         }
         else if (joinPoint.getArgs() != null) {
             for (Object arg : joinPoint.getArgs()) {

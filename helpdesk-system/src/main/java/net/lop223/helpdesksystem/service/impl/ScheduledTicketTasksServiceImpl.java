@@ -41,7 +41,7 @@ public class ScheduledTicketTasksServiceImpl implements ScheduledTicketTasksServ
         }
 
         LocalDateTime cutoff = LocalDateTime.now().minusHours(minimumAgeHours);
-        long count = ticketRepository.countByAssignedToIsNullAndStatusAndCreatedAtBefore(
+        long count = ticketRepository.countByAssignedToIdIsNullAndStatusAndCreatedAtBefore(
                 TicketStatus.NEW,
                 cutoff
         );

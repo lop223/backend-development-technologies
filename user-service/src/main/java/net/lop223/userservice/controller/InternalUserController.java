@@ -5,6 +5,8 @@ import net.lop223.userservice.security.InternalApiTokenValidator;
 import net.lop223.userservice.service.AppUserService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/internal/users")
 public class InternalUserController {
@@ -20,6 +22,16 @@ public class InternalUserController {
     ) {
         this.userService = userService;
         this.tokenValidator = tokenValidator;
+    }
+
+    @GetMapping
+    public List<InternalUserResponse> getAll(
+            @RequestHeader(INTERNAL_TOKEN_HEADER) String token
+    ) {
+        tokenValidator.validate(token);
+        return userService.getAll().stream()
+                .map(user -> new InternalUserResponse(user.id(), user.username()))
+                .toList();
     }
 
     @GetMapping("/{id}")

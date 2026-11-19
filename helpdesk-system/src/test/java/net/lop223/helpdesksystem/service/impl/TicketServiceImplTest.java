@@ -262,14 +262,14 @@ class TicketServiceImplTest {
         when(userServiceClient.getByUsername("john"))
                 .thenReturn(new UserServiceClient.UserReference(1L, "john"));
         when(userServiceClient.getById(13L))
-                .thenThrow(new ResourceNotFoundException("AppUser not found with id: 13"));
+                .thenThrow(new ResourceNotFoundException("User not found: 13"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
                 () -> ticketService.create(request, "john")
         );
 
-        assertEquals("AppUser not found with id: 13", ex.getMessage());
+        assertEquals("User not found: 13", ex.getMessage());
         verifyNoInteractions(ticketRepository, ticketMapper);
     }
 
@@ -363,14 +363,14 @@ class TicketServiceImplTest {
         when(ticketRepository.findById(23L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category(1L)));
         when(userServiceClient.getById(31L))
-                .thenThrow(new ResourceNotFoundException("AppUser not found with id: 31"));
+                .thenThrow(new ResourceNotFoundException("User not found: 31"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
                 () -> ticketService.update(23L, request)
         );
 
-        assertEquals("AppUser not found with id: 31", ex.getMessage());
+        assertEquals("User not found: 31", ex.getMessage());
         verify(ticketRepository, never()).save(any());
     }
 

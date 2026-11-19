@@ -1,12 +1,11 @@
 package net.lop223.helpdesksystem.utils.aspect;
 
 import net.lop223.helpdesksystem.utils.annotation.AuditAction;
-import net.lop223.helpdesksystem.dto.response.AppUserResponse;
 import net.lop223.helpdesksystem.service.AuditLogService;
+import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -60,12 +59,12 @@ class AuditActionAspectTest {
     }
 
     private static Stream<Arguments> provideAuditScenarios() {
-        AppUserResponse userResponse = new AppUserResponse();
-        userResponse.setId(42L);
+        UserServiceClient.UserReference userReference =
+                new UserServiceClient.UserReference(42L, "user");
 
         return Stream.of(
-                Arguments.of("USER_CREATED", "create", userResponse, 42L),
-                Arguments.of("USER_UPDATED", "update", userResponse, 42L),
+                Arguments.of("USER_CREATED", "create", userReference, 42L),
+                Arguments.of("USER_UPDATED", "update", userReference, 42L),
                 Arguments.of("USER_DELETED", "delete", null, 42L)
         );
     }

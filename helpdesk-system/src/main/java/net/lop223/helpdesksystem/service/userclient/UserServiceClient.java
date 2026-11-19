@@ -1,11 +1,13 @@
 package net.lop223.helpdesksystem.service.userclient;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
+import java.util.List;
 
 @Component
 public class UserServiceClient {
@@ -30,6 +32,14 @@ public class UserServiceClient {
                 .requestFactory(requestFactory)
                 .build();
         this.apiToken = apiToken;
+    }
+
+    public List<UserReference> getAll() {
+        return restClient.get()
+                .uri("/internal/users")
+                .header(INTERNAL_TOKEN_HEADER, apiToken)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<UserReference>>() {});
     }
 
     public UserReference getById(Long id) {
