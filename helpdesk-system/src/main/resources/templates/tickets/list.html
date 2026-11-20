@@ -1,12 +1,15 @@
 <!DOCTYPE html>
-<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<html lang="uk" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Заявки</title>
 </head>
 <body>
 <h1>Заявки</h1>
-<p><a th:href="@{/}">← На головну</a> | <a th:href="@{/ui/tickets/new}">+ Нова заявка</a></p>
+<p><a th:href="@{/}">← На головну</a> |
+    <a sec:authorize="hasAnyRole('USER', 'ADMIN')" th:href="@{/ui/tickets/new}">+ Нова заявка</a>
+</p>
 
 <table border="1" cellpadding="6">
     <thead>
@@ -31,14 +34,18 @@
         <td th:text="${ticket.createdByUsername}"></td>
         <td th:text="${ticket.assignedToUsername}"></td>
         <td>
-            <form th:action="@{/ui/tickets/{id}/status(id=${ticket.id})}" method="post" style="display:inline">
+            <a sec:authorize="hasAnyRole('AGENT', 'ADMIN')"
+               th:href="@{/ui/tickets/{id}/edit(id=${ticket.id})}">Редагувати</a>
+            <form sec:authorize="hasAnyRole('AGENT', 'ADMIN')"
+                  th:action="@{/ui/tickets/{id}/status(id=${ticket.id})}" method="post" style="display:inline">
                 <select name="status">
                     <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
                             th:selected="${s == ticket.status}"></option>
                 </select>
                 <button type="submit">Змінити статус</button>
             </form>
-            <form th:action="@{/ui/tickets/{id}/delete(id=${ticket.id})}" method="post" style="display:inline">
+            <form sec:authorize="hasRole('ADMIN')"
+                  th:action="@{/ui/tickets/{id}/delete(id=${ticket.id})}" method="post" style="display:inline">
                 <button type="submit" onclick="return confirm('Видалити заявку?')">Видалити</button>
             </form>
         </td>

@@ -10,9 +10,5 @@ public interface TicketMapper {
 
     @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "category.name", target = "categoryName")
-    @Mapping(source = "createdBy.id", target = "createdById")
-    @Mapping(source = "createdBy.username", target = "createdByUsername")
-    @Mapping(source = "assignedTo.id", target = "assignedToId")
-    @Mapping(source = "assignedTo.username", target = "assignedToUsername")
     TicketResponse toResponse(Ticket entity);
 }

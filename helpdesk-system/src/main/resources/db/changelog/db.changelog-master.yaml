@@ -9,3 +9,7 @@ databaseChangeLog:
       file: db/changelog/changes/004-insert-initial-data.yaml
   - include:
       file: db/changelog/changes/005-create-quartz-tables.sql
+  - include:
+      file: db/changelog/changes/006-detach-user-references.yaml
+  - include:
+      file: db/changelog/changes/007-drop-local-app-user.yaml

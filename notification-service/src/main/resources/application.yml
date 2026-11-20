@@ -1,0 +1,28 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:postgresql://localhost:5435/notification_db}
+    username: ${NOTIFICATION_DB_USERNAME:notification_service}
+    password: ${NOTIFICATION_DB_PASSWORD:notification_pass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:helpdesk}
+    password: ${RABBITMQ_PASSWORD:helpdesk}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        default-requeue-rejected: true
+        retry:
+          enabled: true
+
+internal:
+    api:
+      token: ${NOTIFICATION_API_TOKEN}

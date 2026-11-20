@@ -1,0 +1,180 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - notification_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USERNAME:-notification_service} -d notification_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  helpdesk-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: helpdesk_db
+      POSTGRES_USER: ${HELPDESK_DB_USERNAME:-helpdesk_user}
+      POSTGRES_PASSWORD: ${HELPDESK_DB_PASSWORD:?Set HELPDESK_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - helpdesk_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${HELPDESK_DB_USERNAME:-helpdesk_user} -d helpdesk_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  user-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: ${USER_DB_USERNAME:-user_service}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:?Set USER_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - user_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USERNAME:-user_service} -d user_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev --health-enabled=true --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HOSTNAME: http://localhost:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - keycloak_local_data:/opt/keycloak/data
+      - ./keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'" ]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 20s
+
+  keycloak-provision:
+    image: quay.io/keycloak/keycloak:26.0
+    entrypoint: ["/bin/sh", "/opt/keycloak-provision-users.sh"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      HELPDESK_ADMIN_PASSWORD: ${HELPDESK_ADMIN_PASSWORD:?Set HELPDESK_ADMIN_PASSWORD in .env}
+      HELPDESK_AGENT_PASSWORD: ${HELPDESK_AGENT_PASSWORD:?Set HELPDESK_AGENT_PASSWORD in .env}
+      HELPDESK_USER_PASSWORD: ${HELPDESK_USER_PASSWORD:?Set HELPDESK_USER_PASSWORD in .env}
+    volumes:
+      - ./keycloak/provision-users.sh:/opt/keycloak-provision-users.sh:ro
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    environment:
+      USER_DB_URL: jdbc:postgresql://user-postgres:5432/user_db
+      USER_DB_USERNAME: ${USER_DB_USERNAME:-user_service}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD:?Set USER_DB_PASSWORD in .env}
+      USER_SERVICE_API_TOKEN: ${USER_SERVICE_API_TOKEN:?Set USER_SERVICE_API_TOKEN in .env}
+      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/helpdesk-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/helpdesk-realm/protocol/openid-connect/certs
+    ports:
+      - "127.0.0.1:8082:8082"
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+      keycloak-provision:
+        condition: service_completed_successfully
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    environment:
+      NOTIFICATION_API_TOKEN: ${NOTIFICATION_API_TOKEN:?Set NOTIFICATION_API_TOKEN in .env}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      NOTIFICATION_DB_URL: jdbc:postgresql://notification-postgres:5432/notification_db
+      NOTIFICATION_DB_USERNAME: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notification-postgres:
+        condition: service_healthy
+
+  helpdesk-system:
+    build:
+      context: .
+      dockerfile: helpdesk-system/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://helpdesk-postgres:5432/helpdesk_db
+      SPRING_DATASOURCE_USERNAME: ${HELPDESK_DB_USERNAME:-helpdesk_user}
+      SPRING_DATASOURCE_PASSWORD: ${HELPDESK_DB_PASSWORD:?Set HELPDESK_DB_PASSWORD in .env}
+      SERVICES_USER_BASE_URL: http://user-service:8082
+      SERVICES_USER_API_TOKEN: ${USER_SERVICE_API_TOKEN:?Set USER_SERVICE_API_TOKEN in .env}
+      SERVICES_NOTIFICATION_BASE_URL: http://notification-service:8083
+      SERVICES_NOTIFICATION_API_TOKEN: ${NOTIFICATION_API_TOKEN:?Set NOTIFICATION_API_TOKEN in .env}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/helpdesk-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/helpdesk-realm/protocol/openid-connect/certs
+      KEYCLOAK_AUTHORIZATION_URI: http://localhost:8080/realms/helpdesk-realm/protocol/openid-connect/auth
+      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/helpdesk-realm/protocol/openid-connect/token
+      KEYCLOAK_USER_INFO_URI: http://keycloak:8080/realms/helpdesk-realm/protocol/openid-connect/userinfo
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      helpdesk-postgres:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      keycloak-provision:
+        condition: service_completed_successfully
+
+volumes:
+  helpdesk_pg_data:
+  user_pg_data:
+  keycloak_local_data:
+  rabbitmq_data:
+  notification_pg_data:

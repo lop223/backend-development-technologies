@@ -1,44 +1,39 @@
 package net.lop223.helpdesksystem.service.async;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
+import net.lop223.helpdesksystem.service.async.client.NotificationServiceClient;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
 
-@Slf4j
 @Service
-public class TicketAsyncTasksService
-{
+@RequiredArgsConstructor
+public class TicketAsyncTasksService {
+
+    private final NotificationServiceClient notificationServiceClient;
+
     @Async("ticketExecutor")
-    public void sendCreatedEmail(Long ticketId, String username) {
-        simulateSlowExternalCall();
-        log.info("Simulated ticket-created email: ticketId={}, username={}, thread={}",
-                ticketId, username, Thread.currentThread().getName());
+    public CompletableFuture<String> sendCreatedEmail(Long ticketId, String username) {
+        notificationServiceClient.sendTicketCreatedEmail(ticketId, username);
+        return CompletableFuture.completedFuture(
+                "Notification service accepted ticket-created email for ticket " + ticketId
+        );
     }
 
     @Async("ticketExecutor")
     public CompletableFuture<String> generatePdfReceipt(Long ticketId) {
-        simulateSlowExternalCall();
-        String result = "Generated PDF receipt for ticketId: " + ticketId;
-        log.info("{}; thread={}", result, Thread.currentThread().getName());
-        return CompletableFuture.completedFuture(result);
+        notificationServiceClient.generatePdfReceipt(ticketId);
+        return CompletableFuture.completedFuture(
+                "Notification service accepted PDF request for ticket " + ticketId
+        );
     }
 
     @Async("ticketExecutor")
     public CompletableFuture<String> notifyAssignedAgent(Long ticketId) {
-        simulateSlowExternalCall();
-        String result = "Webhook sent for ticket " + ticketId;
-        log.info("{}; thread={}", result, Thread.currentThread().getName());
-        return CompletableFuture.completedFuture(result);
-    }
-
-    private void simulateSlowExternalCall() {
-        try {
-            Thread.sleep(1_000);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Async ticket operation was interrupted", ex);
-        }
+        notificationServiceClient.notifyAssignedAgent(ticketId);
+        return CompletableFuture.completedFuture(
+                "Notification service accepted agent webhook for ticket " + ticketId
+        );
     }
 }

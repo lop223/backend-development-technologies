@@ -37,13 +37,11 @@ public class Ticket {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "created_by", nullable = false)
-    private AppUser createdBy;
+    @Column(name = "created_by_id", nullable = false)
+    private Long createdById;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_to")
-    private AppUser assignedTo;
+    @Column(name = "assigned_to_id")
+    private Long assignedToId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

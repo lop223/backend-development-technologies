@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-detach-user-references
+      author: lop223
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: ticket
+            constraintName: fk_ticket_created_by
+
+        - dropForeignKeyConstraint:
+            baseTableName: ticket
+            constraintName: fk_ticket_assigned_to
+
+        - renameColumn:
+            tableName: ticket
+            oldColumnName: created_by
+            newColumnName: created_by_id
+            columnDataType: BIGINT
+
+        - renameColumn:
+            tableName: ticket
+            oldColumnName: assigned_to
+            newColumnName: assigned_to_id
+            columnDataType: BIGINT

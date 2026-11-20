@@ -2,12 +2,11 @@ package net.lop223.helpdesksystem.controller.web;
 
 import net.lop223.helpdesksystem.dto.request.TicketRequest;
 import net.lop223.helpdesksystem.dto.request.TicketStatusUpdateRequest;
-import net.lop223.helpdesksystem.dto.response.AppUserResponse;
 import net.lop223.helpdesksystem.dto.response.CategoryResponse;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
-import net.lop223.helpdesksystem.service.AppUserService;
 import net.lop223.helpdesksystem.service.CategoryService;
 import net.lop223.helpdesksystem.service.TicketService;
+import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.enums.TicketStatus;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +16,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
@@ -36,7 +34,7 @@ class TicketWebControllerTest {
     private CategoryService categoryService;
 
     @Mock
-    private AppUserService appUserService;
+    private UserServiceClient userServiceClient;
 
     @InjectMocks
     private TicketWebController ticketWebController;
@@ -60,9 +58,10 @@ class TicketWebControllerTest {
     void newForm_always_populatesModelWithLookups() {
         Model model = new ExtendedModelMap();
         List<CategoryResponse> categories = List.of(new CategoryResponse());
-        List<AppUserResponse> users = List.of(new AppUserResponse());
+        List<UserServiceClient.UserReference> users =
+                List.of(new UserServiceClient.UserReference(1L, "john"));
         when(categoryService.getAll()).thenReturn(categories);
-        when(appUserService.getAll()).thenReturn(users);
+        when(userServiceClient.getAll()).thenReturn(users);
 
         String view = ticketWebController.newForm(model);
 
@@ -70,6 +69,43 @@ class TicketWebControllerTest {
         assertInstanceOf(TicketRequest.class, model.getAttribute("ticketRequest"));
         assertEquals(categories, model.getAttribute("categories"));
         assertEquals(users, model.getAttribute("users"));
+        assertEquals("/ui/tickets", model.getAttribute("formAction"));
+    }
+
+    @Test
+    @DisplayName("editForm: завантажує заявку та її довідники у форму редагування")
+    void editForm_existingTicket_populatesModel() {
+        Model model = new ExtendedModelMap();
+        TicketResponse ticket = new TicketResponse();
+        ticket.setId(5L);
+        ticket.setTitle("Existing ticket");
+        ticket.setCategoryId(2L);
+        ticket.setAssignedToId(1L);
+        when(ticketService.getById(5L)).thenReturn(ticket);
+        when(categoryService.getAll()).thenReturn(List.of(new CategoryResponse()));
+        when(userServiceClient.getAll())
+                .thenReturn(List.of(new UserServiceClient.UserReference(1L, "agent1")));
+
+        String view = ticketWebController.editForm(5L, model);
+        TicketRequest request = (TicketRequest) model.getAttribute("ticketRequest");
+
+        assertEquals("tickets/form", view);
+        assertEquals("Existing ticket", request.getTitle());
+        assertEquals(2L, request.getCategoryId());
+        assertEquals(1L, request.getAssignedToId());
+        assertEquals("/ui/tickets/5", model.getAttribute("formAction"));
+        assertEquals("Редагувати заявку", model.getAttribute("formTitle"));
+    }
+
+    @Test
+    @DisplayName("update: зберігає зміни заявки і перенаправляє до списку")
+    void update_validTicket_delegatesAndRedirects() {
+        TicketRequest request = new TicketRequest();
+
+        String view = ticketWebController.update(5L, request);
+
+        assertEquals("redirect:/ui/tickets", view);
+        verify(ticketService).update(5L, request);
     }
 
     @Test

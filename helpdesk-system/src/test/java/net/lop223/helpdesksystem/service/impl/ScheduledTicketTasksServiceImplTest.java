@@ -47,7 +47,7 @@ class ScheduledTicketTasksServiceImplTest {
     @Test
     @DisplayName("Нагадування про непризначені тикети використовує лише зчитування та може безпечно повторюватися")
     void reminderUsesReadOnlyCountAndCanBeRepeatedForSameAge() {
-        when(ticketRepository.countByAssignedToIsNullAndStatusAndCreatedAtBefore(
+        when(ticketRepository.countByAssignedToIdIsNullAndStatusAndCreatedAtBefore(
                 eq(TicketStatus.NEW),
                 any(LocalDateTime.class)
         )).thenReturn(2L);
@@ -59,7 +59,7 @@ class ScheduledTicketTasksServiceImplTest {
         service.logUnassignedTicketReminder(24);
 
         verify(ticketRepository, times(2))
-                .countByAssignedToIsNullAndStatusAndCreatedAtBefore(
+                .countByAssignedToIdIsNullAndStatusAndCreatedAtBefore(
                         eq(TicketStatus.NEW),
                         any(LocalDateTime.class)
                 );

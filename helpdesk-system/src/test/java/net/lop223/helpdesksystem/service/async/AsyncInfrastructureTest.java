@@ -1,6 +1,7 @@
 package net.lop223.helpdesksystem.service.async;
 
 import net.lop223.helpdesksystem.config.AsyncConfig;
+import net.lop223.helpdesksystem.service.async.client.NotificationServiceClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 @SpringJUnitConfig(classes = {
         AsyncConfig.class,
@@ -85,8 +87,8 @@ class AsyncInfrastructureTest {
 
         String result = combined.get(4, TimeUnit.SECONDS);
 
-        assertTrue(result.contains("Generated PDF receipt for ticketId: 42"));
-        assertTrue(result.contains("Webhook sent for ticket 42"));
+        assertTrue(result.contains("Notification service accepted PDF request for ticket 42"));
+        assertTrue(result.contains("Notification service accepted agent webhook for ticket 42"));
     }
 
     @Test
@@ -121,6 +123,11 @@ class AsyncInfrastructureTest {
         @Bean
         AsyncProbe asyncProbe() {
             return new AsyncProbe();
+        }
+
+        @Bean
+        NotificationServiceClient notificationServiceClient() {
+            return mock(NotificationServiceClient.class);
         }
     }
 

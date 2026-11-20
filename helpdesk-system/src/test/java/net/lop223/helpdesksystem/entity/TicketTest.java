@@ -22,6 +22,7 @@ class TicketTest {
         assertNotNull(ticket.getCreatedAt());
         assertNotNull(ticket.getUpdatedAt());
         assertTrue(ticket.getCreatedAt().isAfter(PAST));
+        assertTrue(ticket.getUpdatedAt().isAfter(PAST));
         assertEquals(TicketStatus.NEW, ticket.getStatus());
     }
 

@@ -1,0 +1,53 @@
+databaseChangeLog:
+  - changeSet:
+      id: user-service-001-create-app-user
+      author: lop223
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_user_service_username
+              - column:
+                  name: email
+                  type: VARCHAR(150)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uq_user_service_email
+              - column:
+                  name: full_name
+                  type: VARCHAR(200)
+              - column:
+                  name: role
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: user-service-002-seed-demo-users
+      author: lop223
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO app_user (username, email, full_name, role, created_at)
+              VALUES
+                ('admin', 'admin@helpdesk.local', 'System Administrator', 'ADMIN', CURRENT_TIMESTAMP),
+                ('agent1', 'agent1@helpdesk.local', 'Helpdesk Agent', 'AGENT', CURRENT_TIMESTAMP),
+                ('user1', 'user1@helpdesk.local', 'Helpdesk User', 'USER', CURRENT_TIMESTAMP)
+              ON CONFLICT (username) DO NOTHING;

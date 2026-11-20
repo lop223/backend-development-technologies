@@ -3,19 +3,18 @@ package net.lop223.helpdesksystem.service.impl;
 import net.lop223.helpdesksystem.dto.request.TicketRequest;
 import net.lop223.helpdesksystem.dto.request.TicketStatusUpdateRequest;
 import net.lop223.helpdesksystem.dto.response.TicketResponse;
-import net.lop223.helpdesksystem.entity.AppUser;
 import net.lop223.helpdesksystem.entity.Category;
 import net.lop223.helpdesksystem.entity.Ticket;
 import net.lop223.helpdesksystem.mapper.TicketMapper;
-import net.lop223.helpdesksystem.repository.AppUserRepository;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
-import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
-import net.lop223.helpdesksystem.utils.enums.Role;
+import net.lop223.helpdesksystem.messaging.TicketEventPublisher;
+import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.enums.TicketPriority;
 import net.lop223.helpdesksystem.utils.enums.TicketStatus;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,12 +24,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class TicketServiceImplTest {
@@ -42,23 +41,19 @@ class TicketServiceImplTest {
     private CategoryRepository categoryRepository;
 
     @Mock
-    private AppUserRepository appUserRepository;
+    private UserServiceClient userServiceClient;
 
     @Mock
     private TicketMapper ticketMapper;
 
     @Mock
-    private TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
+    private TicketEventPublisher ticketEventPublisher;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
 
     private static Category category(long id) {
         return Category.builder().id(id).name("Category " + id).build();
-    }
-
-    private static AppUser user(long id, String username, Role role) {
-        return AppUser.builder().id(id).username(username).email(username + "@mail.com").role(role).build();
     }
 
     private static Ticket ticket(long id) {
@@ -69,9 +64,18 @@ class TicketServiceImplTest {
                 .status(TicketStatus.NEW)
                 .priority(TicketPriority.LOW)
                 .category(category(1L))
-                .createdBy(user(1L, "creator", Role.USER))
-                .assignedTo(user(2L, "agent", Role.AGENT))
+                .createdById(1L)
+                .assignedToId(2L)
                 .build();
+    }
+
+    @BeforeEach
+    void setUpUserClient() {
+        lenient().when(userServiceClient.getById(anyLong()))
+                .thenAnswer(invocation -> {
+                    Long id = invocation.getArgument(0);
+                    return new UserServiceClient.UserReference(id, "user-" + id);
+                });
     }
 
     private static TicketRequest request(Long categoryId, Long assignedToId) {
@@ -150,31 +154,28 @@ class TicketServiceImplTest {
     void create_withAssignee_savesTicketWithAllRelations() {
         TicketRequest request = request(5L, 9L);
         Category category = category(5L);
-        AppUser creator = user(1L, "john", Role.USER);
-        AppUser assignee = user(9L, "agent", Role.AGENT);
         Ticket saved = ticket(100L);
         TicketResponse expected = response(100L);
         when(categoryRepository.findById(5L)).thenReturn(Optional.of(category));
-        when(appUserRepository.findByUsername("john")).thenReturn(Optional.of(creator));
-        when(appUserRepository.findById(9L)).thenReturn(Optional.of(assignee));
+        when(userServiceClient.getByUsername("john"))
+                .thenReturn(new UserServiceClient.UserReference(1L, "john"));
+        when(userServiceClient.getById(9L))
+                .thenReturn(new UserServiceClient.UserReference(9L, "agent"));
         when(ticketRepository.save(any(Ticket.class))).thenReturn(saved);
         when(ticketMapper.toResponse(saved)).thenReturn(expected);
-        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
         TicketResponse result = ticketService.create(request, "john");
 
         assertSame(expected, result);
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository, times(1)).save(captor.capture());
-        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(expected);
+        verify(ticketEventPublisher).publishAfterCommit(any());
         Ticket captured = captor.getValue();
         assertEquals("Printer is broken", captured.getTitle());
         assertEquals("Paper jam on the 2nd floor", captured.getDescription());
         assertEquals(TicketPriority.HIGH, captured.getPriority());
         assertSame(category, captured.getCategory());
-        assertSame(creator, captured.getCreatedBy());
-        assertSame(assignee, captured.getAssignedTo());
+        assertEquals(1L, captured.getCreatedById());
+        assertEquals(9L, captured.getAssignedToId());
         assertNull(captured.getStatus(), "Status is assigned by @PrePersist, not by the service");
     }
 
@@ -183,20 +184,18 @@ class TicketServiceImplTest {
     void create_withoutAssignee_savesTicketWithNullAssignee() {
         TicketRequest request = request(5L, null);
         when(categoryRepository.findById(5L)).thenReturn(Optional.of(category(5L)));
-        when(appUserRepository.findByUsername("john")).thenReturn(Optional.of(user(1L, "john", Role.USER)));
+        when(userServiceClient.getByUsername("john"))
+                .thenReturn(new UserServiceClient.UserReference(1L, "john"));
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
         when(ticketMapper.toResponse(any(Ticket.class))).thenReturn(response(0L));
-        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
         TicketResponse result = ticketService.create(request, "john");
 
         assertNotNull(result);
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository).save(captor.capture());
-        assertNull(captor.getValue().getAssignedTo());
-        verify(appUserRepository, never()).findById(anyLong());
-        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(result);
+        assertNull(captor.getValue().getAssignedToId());
+        verify(userServiceClient, never()).getById(9L);
+        verify(ticketEventPublisher).publishAfterCommit(any());
     }
 
     @Test
@@ -211,7 +210,7 @@ class TicketServiceImplTest {
         );
 
         assertEquals("Category not found with id: 404", ex.getMessage());
-        verifyNoInteractions(appUserRepository, ticketRepository, ticketMapper);
+        verifyNoInteractions(userServiceClient, ticketRepository, ticketMapper);
     }
 
     @Test
@@ -219,7 +218,8 @@ class TicketServiceImplTest {
     void create_missingCreator_throwsResourceNotFoundException() {
         TicketRequest request = request(5L, null);
         when(categoryRepository.findById(5L)).thenReturn(Optional.of(category(5L)));
-        when(appUserRepository.findByUsername("unknown")).thenReturn(Optional.empty());
+        when(userServiceClient.getByUsername("unknown"))
+                .thenThrow(new ResourceNotFoundException("User not found: unknown"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
@@ -235,7 +235,8 @@ class TicketServiceImplTest {
     void create_nullCreatorUsername_throwsResourceNotFoundException() {
         TicketRequest request = request(5L, null);
         when(categoryRepository.findById(5L)).thenReturn(Optional.of(category(5L)));
-        when(appUserRepository.findByUsername(null)).thenReturn(Optional.empty());
+        when(userServiceClient.getByUsername(null))
+                .thenThrow(new ResourceNotFoundException("User not found: null"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
@@ -251,15 +252,17 @@ class TicketServiceImplTest {
     void create_missingAssignee_throwsResourceNotFoundException() {
         TicketRequest request = request(5L, 13L);
         when(categoryRepository.findById(5L)).thenReturn(Optional.of(category(5L)));
-        when(appUserRepository.findByUsername("john")).thenReturn(Optional.of(user(1L, "john", Role.USER)));
-        when(appUserRepository.findById(13L)).thenReturn(Optional.empty());
+        when(userServiceClient.getByUsername("john"))
+                .thenReturn(new UserServiceClient.UserReference(1L, "john"));
+        when(userServiceClient.getById(13L))
+                .thenThrow(new ResourceNotFoundException("User not found: 13"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
                 () -> ticketService.create(request, "john")
         );
 
-        assertEquals("AppUser not found with id: 13", ex.getMessage());
+        assertEquals("User not found: 13", ex.getMessage());
         verifyNoInteractions(ticketRepository, ticketMapper);
     }
 
@@ -267,14 +270,13 @@ class TicketServiceImplTest {
     @DisplayName("update: перезаписує поля тікета, категорію та виконавця")
     void update_withAssignee_overwritesFieldsAndSaves() {
         Ticket existing = ticket(20L);
-        AppUser originalCreator = existing.getCreatedBy();
         TicketRequest request = request(6L, 9L);
         Category newCategory = category(6L);
-        AppUser newAssignee = user(9L, "agent2", Role.AGENT);
         TicketResponse expected = response(20L);
         when(ticketRepository.findById(20L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(6L)).thenReturn(Optional.of(newCategory));
-        when(appUserRepository.findById(9L)).thenReturn(Optional.of(newAssignee));
+        when(userServiceClient.getById(9L))
+                .thenReturn(new UserServiceClient.UserReference(9L, "agent2"));
         when(ticketRepository.save(existing)).thenReturn(existing);
         when(ticketMapper.toResponse(existing)).thenReturn(expected);
 
@@ -288,8 +290,8 @@ class TicketServiceImplTest {
         assertEquals("Paper jam on the 2nd floor", captured.getDescription());
         assertEquals(TicketPriority.HIGH, captured.getPriority());
         assertSame(newCategory, captured.getCategory());
-        assertSame(newAssignee, captured.getAssignedTo());
-        assertSame(originalCreator, captured.getCreatedBy());
+        assertEquals(9L, captured.getAssignedToId());
+        assertEquals(1L, captured.getCreatedById());
         assertEquals(TicketStatus.NEW, captured.getStatus());
     }
 
@@ -308,8 +310,8 @@ class TicketServiceImplTest {
         assertEquals(21L, result.getId());
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository).save(captor.capture());
-        assertNull(captor.getValue().getAssignedTo());
-        verifyNoInteractions(appUserRepository);
+        assertNull(captor.getValue().getAssignedToId());
+        verify(userServiceClient, never()).getById(2L);
     }
 
     @Test
@@ -325,7 +327,7 @@ class TicketServiceImplTest {
 
         assertEquals("Ticket not found with id: 55", ex.getMessage());
         verify(ticketRepository, never()).save(any());
-        verifyNoInteractions(categoryRepository, appUserRepository, ticketMapper);
+        verifyNoInteractions(categoryRepository, userServiceClient, ticketMapper);
     }
 
     @Test
@@ -353,14 +355,15 @@ class TicketServiceImplTest {
         TicketRequest request = request(1L, 31L);
         when(ticketRepository.findById(23L)).thenReturn(Optional.of(existing));
         when(categoryRepository.findById(1L)).thenReturn(Optional.of(category(1L)));
-        when(appUserRepository.findById(31L)).thenReturn(Optional.empty());
+        when(userServiceClient.getById(31L))
+                .thenThrow(new ResourceNotFoundException("User not found: 31"));
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
                 () -> ticketService.update(23L, request)
         );
 
-        assertEquals("AppUser not found with id: 31", ex.getMessage());
+        assertEquals("User not found: 31", ex.getMessage());
         verify(ticketRepository, never()).save(any());
     }
 

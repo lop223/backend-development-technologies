@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-drop-local-app-user
+      author: lop223
+      changes:
+        - dropTable:
+            tableName: app_user

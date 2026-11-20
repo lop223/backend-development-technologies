@@ -10,12 +10,12 @@ import java.util.List;
 
 @Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
-    List<Ticket> findByCreatedByUsername(String username);
-    List<Ticket> findByAssignedToUsername(String username);
+    List<Ticket> findByCreatedById(Long createdById);
+    List<Ticket> findByAssignedToId(Long assignedToId);
 
     long countByStatus(TicketStatus status);
 
-    long countByAssignedToIsNullAndStatusAndCreatedAtBefore(
+    long countByAssignedToIdIsNullAndStatusAndCreatedAtBefore(
             TicketStatus status,
             LocalDateTime createdAt
     );

@@ -42,8 +42,6 @@ public class SecurityConfig {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
-
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
@@ -73,7 +71,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/index", "/css/**", "/js/**", "/webjars/**").permitAll()
-                        .requestMatchers("/ui/categories", "/ui/users").hasRole("ADMIN")
+                        .requestMatchers("/ui/categories").hasRole("ADMIN")
+                        .requestMatchers("/ui/tickets/*/edit").hasAnyRole("AGENT", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/ui/tickets/*").hasAnyRole("AGENT", "ADMIN")
                         .requestMatchers("/ui/tickets/new").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/ui/**").authenticated()
                         .anyRequest().authenticated()

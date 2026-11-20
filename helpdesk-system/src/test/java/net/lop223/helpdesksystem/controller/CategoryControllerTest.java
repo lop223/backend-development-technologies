@@ -1,6 +1,5 @@
 package net.lop223.helpdesksystem.controller;
 
-import net.lop223.helpdesksystem.dto.request.AppUserRequest;
 import net.lop223.helpdesksystem.dto.request.CategoryRequest;
 import net.lop223.helpdesksystem.dto.response.CategoryResponse;
 import net.lop223.helpdesksystem.service.CategoryService;
