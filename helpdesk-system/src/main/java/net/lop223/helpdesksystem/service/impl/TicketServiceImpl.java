@@ -13,6 +13,8 @@ import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
 import net.lop223.helpdesksystem.service.TicketService;
 import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
+import net.lop223.helpdesksystem.messaging.TicketEvent;
+import net.lop223.helpdesksystem.messaging.TicketEventPublisher;
 import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.annotation.MaskSensitiveData;
 import net.lop223.helpdesksystem.utils.exception.ResourceNotFoundException;
@@ -20,6 +22,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -31,7 +35,7 @@ public class TicketServiceImpl implements TicketService {
     private final CategoryRepository categoryRepository;
     private final UserServiceClient userServiceClient;
     private final TicketMapper ticketMapper;
-    private final TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
+    private final TicketEventPublisher ticketEventPublisher;
 
     @Override
     @Transactional
@@ -77,16 +81,13 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket saved = ticketRepository.save(ticket);
         TicketResponse response = toResponse(saved);
-
-        ticketAsyncCoordinatorService.dispatchAfterCreation(response)
-                .whenComplete((summary, exception) -> {
-                    if (exception != null) {
-                        log.error("Async post-processing failed for ticket {}",
-                                response.getId(), exception);
-                    } else {
-                        log.info("Async post-processing result: {}", summary);
-                    }
-                });
+        ticketEventPublisher.publishAfterCommit(new TicketEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_CREATED",
+                saved.getId(),
+                "Ticket created",
+                Instant.now()
+        ));
 
         return response;
     }
@@ -109,6 +110,13 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket saved = ticketRepository.save(ticket);
+        ticketEventPublisher.publishAfterCommit(new TicketEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_UPDATED",
+                saved.getId(),
+                "Ticket details updated",
+                Instant.now()
+        ));
         return toResponse(saved);
     }
 
@@ -118,6 +126,13 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = findEntityById(id);
         ticket.setStatus(request.getStatus());
         Ticket saved = ticketRepository.save(ticket);
+        ticketEventPublisher.publishAfterCommit(new TicketEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_STATUS_CHANGED",
+                saved.getId(),
+                "Status changed to " + request.getStatus(),
+                Instant.now()
+        ));
         return toResponse(saved);
     }
 
@@ -126,6 +141,13 @@ public class TicketServiceImpl implements TicketService {
     public void delete(Long id) {
         Ticket ticket = findEntityById(id);
         ticketRepository.delete(ticket);
+        ticketEventPublisher.publishAfterCommit(new TicketEvent(
+                UUID.randomUUID().toString(),
+                "TICKET_DELETED",
+                ticket.getId(),
+                "Ticket deleted",
+                Instant.now()
+        ));
     }
 
     private Ticket findEntityById(Long id) {

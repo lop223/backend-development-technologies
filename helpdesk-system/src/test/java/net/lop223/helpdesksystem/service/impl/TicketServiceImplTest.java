@@ -8,7 +8,7 @@ import net.lop223.helpdesksystem.entity.Ticket;
 import net.lop223.helpdesksystem.mapper.TicketMapper;
 import net.lop223.helpdesksystem.repository.CategoryRepository;
 import net.lop223.helpdesksystem.repository.TicketRepository;
-import net.lop223.helpdesksystem.service.async.TicketAsyncCoordinatorService;
+import net.lop223.helpdesksystem.messaging.TicketEventPublisher;
 import net.lop223.helpdesksystem.service.userclient.UserServiceClient;
 import net.lop223.helpdesksystem.utils.enums.TicketPriority;
 import net.lop223.helpdesksystem.utils.enums.TicketStatus;
@@ -24,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,7 +47,7 @@ class TicketServiceImplTest {
     private TicketMapper ticketMapper;
 
     @Mock
-    private TicketAsyncCoordinatorService ticketAsyncCoordinatorService;
+    private TicketEventPublisher ticketEventPublisher;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
@@ -164,15 +163,12 @@ class TicketServiceImplTest {
                 .thenReturn(new UserServiceClient.UserReference(9L, "agent"));
         when(ticketRepository.save(any(Ticket.class))).thenReturn(saved);
         when(ticketMapper.toResponse(saved)).thenReturn(expected);
-        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
         TicketResponse result = ticketService.create(request, "john");
 
         assertSame(expected, result);
         ArgumentCaptor<Ticket> captor = ArgumentCaptor.forClass(Ticket.class);
         verify(ticketRepository, times(1)).save(captor.capture());
-        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(expected);
+        verify(ticketEventPublisher).publishAfterCommit(any());
         Ticket captured = captor.getValue();
         assertEquals("Printer is broken", captured.getTitle());
         assertEquals("Paper jam on the 2nd floor", captured.getDescription());
@@ -192,9 +188,6 @@ class TicketServiceImplTest {
                 .thenReturn(new UserServiceClient.UserReference(1L, "john"));
         when(ticketRepository.save(any(Ticket.class))).thenAnswer(inv -> inv.getArgument(0));
         when(ticketMapper.toResponse(any(Ticket.class))).thenReturn(response(0L));
-        when(ticketAsyncCoordinatorService.dispatchAfterCreation(any(TicketResponse.class)))
-                .thenReturn(CompletableFuture.completedFuture(null));
-
         TicketResponse result = ticketService.create(request, "john");
 
         assertNotNull(result);
@@ -202,7 +195,7 @@ class TicketServiceImplTest {
         verify(ticketRepository).save(captor.capture());
         assertNull(captor.getValue().getAssignedToId());
         verify(userServiceClient, never()).getById(9L);
-        verify(ticketAsyncCoordinatorService).dispatchAfterCreation(result);
+        verify(ticketEventPublisher).publishAfterCommit(any());
     }
 
     @Test

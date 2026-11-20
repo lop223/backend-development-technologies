@@ -1,4 +1,36 @@
 services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  notification-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5435:5432"
+    volumes:
+      - notification_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${NOTIFICATION_DB_USERNAME:-notification_service} -d notification_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   helpdesk-postgres:
     image: postgres:16-alpine
     environment:
@@ -90,8 +122,20 @@ services:
       dockerfile: notification-service/Dockerfile
     environment:
       NOTIFICATION_API_TOKEN: ${NOTIFICATION_API_TOKEN:?Set NOTIFICATION_API_TOKEN in .env}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      NOTIFICATION_DB_URL: jdbc:postgresql://notification-postgres:5432/notification_db
+      NOTIFICATION_DB_USERNAME: ${NOTIFICATION_DB_USERNAME:-notification_service}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
     ports:
       - "127.0.0.1:8083:8083"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notification-postgres:
+        condition: service_healthy
 
   helpdesk-system:
     build:
@@ -105,6 +149,10 @@ services:
       SERVICES_USER_API_TOKEN: ${USER_SERVICE_API_TOKEN:?Set USER_SERVICE_API_TOKEN in .env}
       SERVICES_NOTIFICATION_BASE_URL: http://notification-service:8083
       SERVICES_NOTIFICATION_API_TOKEN: ${NOTIFICATION_API_TOKEN:?Set NOTIFICATION_API_TOKEN in .env}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-helpdesk}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
       KEYCLOAK_ISSUER_URI: http://localhost:8080/realms/helpdesk-realm
       KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/helpdesk-realm/protocol/openid-connect/certs
       KEYCLOAK_AUTHORIZATION_URI: http://localhost:8080/realms/helpdesk-realm/protocol/openid-connect/auth
@@ -119,6 +167,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
       keycloak-provision:
         condition: service_completed_successfully
 
@@ -126,3 +176,5 @@ volumes:
   helpdesk_pg_data:
   user_pg_data:
   keycloak_local_data:
+  rabbitmq_data:
+  notification_pg_data:
